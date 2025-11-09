@@ -86,7 +86,7 @@ app.post("/template", async (req, res) => {
             { role: "system", content: "Return either node or react based on what do you think this project should be. Only return a single word either 'node' or 'react'. Do not return anything extra" },
             { role: "user", content: prompt }
         ],
-        max_tokens: 200,
+        max_tokens: 50,
     })
 
     // console.log(response);
@@ -97,7 +97,7 @@ app.post("/template", async (req, res) => {
     if (answer == "react") {
         res.json({
             prompts: [BASE_PROMPT, `Here is an artifact that contains all files of the project visible to you.\nConsider the contents of ALL files in the project.\n\n${reactBasePrompt}\n\nHere is a list of files that exist on the file system but are not being shown to you:\n\n  - .gitignore\n  - package-lock.json\n`],
-            uiPrompts: [reactBasePrompt]
+            uiPrompts: [reactBasePrompt],
         })
         return;
     }
@@ -105,7 +105,7 @@ app.post("/template", async (req, res) => {
     if (answer === "node") {
         res.json({
             prompts: [`Here is an artifact that contains all files of the project visible to you.\nConsider the contents of ALL files in the project.\n\n${nodeBasePrompt}\n\nHere is a list of files that exist on the file system but are not being shown to you:\n\n  - .gitignore\n  - package-lock.json\n`],
-            uiPrompts: [nodeBasePrompt]
+            uiPrompts: [nodeBasePrompt],
         })
         return;
     }
@@ -129,7 +129,7 @@ app.post("/chat", async (req, res) => {
             { role: "system", content: getSystemPrompt() },
             { role: "user", content: messages }
         ],
-        max_tokens: 500,
+        max_tokens: 100,
     })
 
     console.log(response);
