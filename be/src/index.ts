@@ -54,13 +54,13 @@
 require("dotenv").config();
 import express from "express";
 import { BASE_PROMPT, getSystemPrompt } from "./prompts";
-import {basePrompt as nodeBasePrompt} from "./defaults/node";
-import {basePrompt as reactBasePrompt} from "./defaults/react";
+import { basePrompt as nodeBasePrompt } from "./defaults/node";
+import { basePrompt as reactBasePrompt } from "./defaults/react";
 import cors from "cors";
 import OpenAI from "openai";
 
 const client = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY!,
+    apiKey: process.env.OPENAI_API_KEY!,
 });
 
 // const anthropic = new Anthropic();
@@ -70,7 +70,7 @@ app.use(express.json())
 
 app.post("/template", async (req, res) => {
     const prompt = req.body.prompt;
-    
+
     // const response = await anthropic.messages.create({
     //     messages: [{
     //         role: 'user', content: prompt
@@ -110,44 +110,50 @@ app.post("/template", async (req, res) => {
         return;
     }
 
-    res.status(403).json({message: "You cant access this"})
+    res.status(403).json({ message: "You cant access this" })
     return;
 
 })
 
 app.post("/chat", async (req, res) => {
-    const messages = req.body.messages;
-    // const response = await anthropic.messages.create({
-    //     messages: messages,
-    //     model: 'claude-3-5-sonnet-20241022',
-    //     max_tokens: 8000,
-    //     system: getSystemPrompt()
-    // })
-    const messagesToSend = messages.map((x: any) => ({
-        type: "text" as const,
-        content: x.content              
-    }))
-    console.log("Messages to send:", messagesToSend);
-    console.log("------------------------------------------------------------------------------------")
-    const response = await client.chat.completions.create({
-        model: "gpt-5",
-        messages: [
-            { role: "system", content: getSystemPrompt() },
-            { role: "user", content: messagesToSend }
-        ],
-        // max_tokens: 5000
-        max_completion_tokens: 5000
-    })
+    try {
+        const messagesToSend = req.body.messages || [];
 
-    console.log(response.choices[0].message.content);
-    console.log(response);
+        res.setHeader("Content-Type", "text/event-stream");
+        res.setHeader("Cache-Control", "no-cache");
+        res.setHeader("Connection", "keep-alive");
 
-    // res.json({
-    //     response: (response.content[0] as TextBlock)?.text
-    // });
-    res.json({
-        response: response.choices[0].message.content
-    });
-})
+        const stream = await client.chat.completions.create({
+            model: "gpt-4.1",
+            stream: true, // 👈 old-style flag
+            messages: [
+                { role: "system", content: getSystemPrompt() },
+                {
+                    role: "user",
+                    // 👇 give msg a type annotation to fix implicit 'any' error
+                    content: messagesToSend.map((msg: { content: string }) => msg.content).join("\n\n"),
+                },
+            ],
+            max_completion_tokens: 8000,
+            response_format: { type: "text" },
+        });
+
+        // 👇 Old-style readable stream API
+        for await (const chunk of stream) {
+            const content = chunk.choices?.[0]?.delta?.content;
+            if (content) {
+                process.stdout.write(content);
+                res.write(content);
+            }
+        }
+
+        // res.write("\n\n[STREAM_END]");
+        res.end();
+    } catch (err) {
+        console.error("Streaming error:", err);
+        res.status(500).send("Error streaming response");
+    }
+});
+
 
 app.listen(3000);

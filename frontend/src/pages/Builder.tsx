@@ -97,7 +97,7 @@ export function Builder() {
           ...s,
           status: "completed"
         }
-        
+
       }))
     }
     console.log(files);
@@ -154,6 +154,7 @@ export function Builder() {
     const response = await axios.post(`${BACKEND_URL}/template`, {
       prompt: prompt.trim()
     });
+    
     setTemplateSet(true);
     
     const {prompts, uiPrompts} = response.data;
@@ -173,7 +174,7 @@ export function Builder() {
 
     setLoading(false);
 
-    setSteps(s => [...s, ...parseXml(stepsResponse.data.response).map(x => ({
+    setSteps(s => [...s, ...parseXml(stepsResponse.data).map(x => ({
       ...x,
       status: "pending" as "pending"
     }))]);
@@ -183,7 +184,7 @@ export function Builder() {
       content
     })));
 
-    setLlmMessages(x => [...x, {role: "assistant", content: stepsResponse.data.response}])
+    setLlmMessages(x => [...x, {role: "assistant", content: stepsResponse.data}])
   }
 
   useEffect(() => {
@@ -231,10 +232,10 @@ export function Builder() {
                     setLlmMessages(x => [...x, newMessage]);
                     setLlmMessages(x => [...x, {
                       role: "assistant",
-                      content: stepsResponse.data.response
+                      content: stepsResponse.data
                     }]);
                     
-                    setSteps(s => [...s, ...parseXml(stepsResponse.data.response).map(x => ({
+                    setSteps(s => [...s, ...parseXml(stepsResponse.data).map(x => ({
                       ...x,
                       status: "pending" as "pending"
                     }))]);
