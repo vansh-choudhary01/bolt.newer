@@ -93,7 +93,7 @@ app.post("/template", async (req, res) => {
 
     // const answer = (response.content[0]).text; // react or node
     const answer = response.choices[0].message.content; // react or node
-    console.log("Determined template:", answer);
+    // console.log("Determined template:", answer);
     if (answer == "react") {
         res.json({
             prompts: [BASE_PROMPT, `Here is an artifact that contains all files of the project visible to you.\nConsider the contents of ALL files in the project.\n\n${reactBasePrompt}\n\nHere is a list of files that exist on the file system but are not being shown to you:\n\n  - .gitignore\n  - package-lock.json\n`],
@@ -123,15 +123,23 @@ app.post("/chat", async (req, res) => {
     //     max_tokens: 8000,
     //     system: getSystemPrompt()
     // })
+    const messagesToSend = messages.map((x: any) => ({
+        type: "text" as const,
+        content: x.content              
+    }))
+    console.log("Messages to send:", messagesToSend);
+    console.log("------------------------------------------------------------------------------------")
     const response = await client.chat.completions.create({
-        model: "gpt-4.1-nano",
+        model: "gpt-5",
         messages: [
             { role: "system", content: getSystemPrompt() },
-            { role: "user", content: messages }
+            { role: "user", content: messagesToSend }
         ],
-        max_tokens: 100,
+        // max_tokens: 5000
+        max_completion_tokens: 5000
     })
 
+    console.log(response.choices[0].message.content);
     console.log(response);
 
     // res.json({
